@@ -32,23 +32,26 @@ func getTestParcel() Parcel {
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // Подключение к БД
+	require.NoError(t, err)                     // Проверка подключения к БД
+
+	defer db.Close() // Закрыть соединение сразу после проверки
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	id, err := store.Add(parcel) // Добавляем посылку
-	require.NoError(t, err)
-	defer db.Close() // Закрыть соединение
 
-	require.NoError(t, err)
+	require.NoError(t, err) // Проверка ошибок добавления посылки
 	require.NotZero(t, id)
 
 	// get
 	storedParcel, err := store.Get(id) // Получаем посылку
 	require.NoError(t, err)
-	require.Equal(t, parcel.Status, storedParcel.Status)   // Проверяем статус
-	require.Equal(t, parcel.Address, storedParcel.Address) // Проверяем адрес
-	require.Equal(t, parcel.Client, storedParcel.Client)   // Проверяем клиента
+
+	// Сравнение структур с игнорированием поля Number
+	parcel.Number = 0                      // Игнорируем поле Number
+	storedParcel.Number = 0                // Игнорируем поле Number
+	require.Equal(t, parcel, storedParcel) // Проверяем статус, адрес и клиента
 
 	// delete
 	err = store.Delete(id) // Удаляем посылку
